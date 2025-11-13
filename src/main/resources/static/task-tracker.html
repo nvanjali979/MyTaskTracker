@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>🗓️ Task Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      background: #f8f9fa;
+      color: #333;
+    }
+    h1 { text-align: center; color: #2c3e50; }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    input, button { padding: 10px; font-size: 14px; }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background: #0056b3; }
+    ul { list-style: none; padding: 0; }
+    li {
+      background: white;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    li.completed span { text-decoration: line-through; color: #888; }
+    .actions button { margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <h1>🗓️ Task Tracker</h1>
+  <form id="taskForm">
+    <input type="text" id="title" placeholder="Task title" required />
+    <input type="text" id="description" placeholder="Description" />
+    <input type="date" id="dueDate" />
+    <button type="submit">Add Task</button>
+  </form>
+  <ul id="taskList"></ul>
+  <script>
+    const API_BASE = "/api/tasks";
+    const taskList = document.getElementById("taskList");
+    const form = document.getElementById("taskForm");
+
+    async function loadTasks() {
+      const res = await fetch(API_BASE);
+      const tasks = await res.json();
+      renderTasks(tasks);
+    }
+
+    function renderTasks(tasks) {
+      taskList.innerHTML = "";
+      if (tasks.length === 0) {
+        taskList.innerHTML = "<li>No tasks yet.</li>";
+        return;
+      }
+
+      tasks.forEach(task => {
+        const li = document.createElement("li");
+        li.className = task.completed ? "completed" : "";
+
+        const span = document.createElement("span");
+        span.textContent = `${task.title} (${task.dueDate || "No due date"})`;
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        if (!task.completed) {
+          const completeBtn = document.createElement("button");
+          completeBtn.textContent = "Complete";
+          completeBtn.onclick = async () => {
+            await fetch(`${API_BASE}/${task.id}/complete`, { method: "PATCH" });
+            loadTasks();
+          };
+          actions.appendChild(completeBtn);
+        }
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.onclick = async () => {
+          await fetch(`${API_BASE}/${task.id}`, { method: "DELETE" });
+          loadTasks();
+        };
+
+        actions.appendChild(deleteBtn);
+        li.appendChild(span);
+        li.appendChild(actions);
+        taskList.appendChild(li);
+      });
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const task = {
+        title: document.getElementById("title").value,
+        description: document.getElementById("description").value,
+        dueDate: document.getElementById("dueDate").value
+      };
+      await fetch(API_BASE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(task)
+      });
+      form.reset();
+      loadTasks();
+    });
+
+    loadTasks();
+  </script>
+</body>
+</html>
