@@ -1,1 +1,1 @@
-This app is used to track the to-do activities
+This app is used to track the to-do activities.
